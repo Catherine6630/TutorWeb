@@ -1,8 +1,41 @@
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Database, Network, TerminalSquare } from "lucide-react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Code2,
+  Cpu,
+  Database,
+  Globe2,
+  GraduationCap,
+  ImageIcon,
+  MonitorCog,
+  Network,
+  Search,
+  ShieldCheck,
+  Sigma,
+  TerminalSquare,
+  Users,
+  Workflow,
+} from "lucide-react";
 import type { Course } from "@/lib/models";
 
-const icons = { "terminal-square": TerminalSquare, network: Network, database: Database };
+const icons = {
+  "book-open": BookOpen,
+  "code-2": Code2,
+  cpu: Cpu,
+  database: Database,
+  globe: Globe2,
+  "graduation-cap": GraduationCap,
+  image: ImageIcon,
+  "monitor-cog": MonitorCog,
+  network: Network,
+  search: Search,
+  "shield-check": ShieldCheck,
+  sigma: Sigma,
+  "terminal-square": TerminalSquare,
+  users: Users,
+  workflow: Workflow,
+};
 
 export function CourseCard({ course }: { course: Course }) {
   const Icon = icons[course.icon as keyof typeof icons] ?? BookOpen;

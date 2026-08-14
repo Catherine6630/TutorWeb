@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { uoaUndergraduateCourses } from "@/lib/course-catalog";
 import { chunkText } from "@/lib/text";
 
 const globalForDb = globalThis as unknown as { tutorDb?: Database.Database };
@@ -32,9 +33,9 @@ type DemoMaterial = {
 
 const demoMaterials: DemoMaterial[] = [
   {
-    courseCode: "COMP101",
+    courseCode: "COMPSCI 101",
     title: "Lecture 03 — Control Flow & Functions",
-    filename: "comp101-lecture-03-demo.md",
+    filename: "compsci101-lecture-03-demo.md",
     type: "lecture",
     year: "2026",
     tags: ["functions", "conditionals", "loops"],
@@ -47,9 +48,9 @@ Loops repeat work. A for-loop is a natural fit when traversing a collection or a
 Trace programs by recording variable values after each statement. For an off-by-one error, check the initial index, comparison operator, and final valid index.`,
   },
   {
-    courseCode: "COMP101",
+    courseCode: "COMPSCI 101",
     title: "Practice Sheet — Python Foundations",
-    filename: "comp101-practice-demo.md",
+    filename: "compsci101-practice-demo.md",
     type: "tutorial",
     year: "2026",
     tags: ["python", "practice"],
@@ -60,9 +61,9 @@ Practice task 2: Explain why a mutable default argument can preserve state betwe
 Practice task 3: Given a loop over range(n), identify how many times the body executes and give the time complexity using Big-O notation.`,
   },
   {
-    courseCode: "COMP201",
+    courseCode: "COMPSCI 220",
     title: "Lecture 04 — Trees & Traversal",
-    filename: "comp201-lecture-04-demo.md",
+    filename: "compsci220-lecture-04-demo.md",
     type: "lecture",
     year: "2026",
     tags: ["trees", "bst", "traversal"],
@@ -75,9 +76,9 @@ Breadth-first traversal uses a queue and visits nodes level by level. Both DFS a
 A balanced binary search tree supports search, insertion, and deletion in O(log n). An unbalanced tree can degrade into a chain with O(n) operations.`,
   },
   {
-    courseCode: "COMP201",
+    courseCode: "COMPSCI 220",
     title: "2025 Practice Exam — Algorithms",
-    filename: "comp201-past-paper-demo.md",
+    filename: "compsci220-past-paper-demo.md",
     type: "past-paper",
     year: "2025",
     tags: ["exam", "complexity", "graphs"],
@@ -90,9 +91,9 @@ Question 3 (8 marks): A binary search implementation updates low = mid instead o
 This is original demonstration content and does not contain an official marking scheme.`,
   },
   {
-    courseCode: "COMP301",
+    courseCode: "COMPSCI 351",
     title: "Lecture 05 — Normalisation",
-    filename: "comp301-lecture-05-demo.md",
+    filename: "compsci351-lecture-05-demo.md",
     type: "lecture",
     year: "2026",
     tags: ["database", "normalisation", "functional-dependency"],
@@ -105,9 +106,9 @@ BCNF requires that every determinant in a non-trivial functional dependency is a
 Normalisation reduces update, insertion, and deletion anomalies, but query performance and workload requirements still matter when designing a production schema.`,
   },
   {
-    courseCode: "COMP301",
+    courseCode: "COMPSCI 351",
     title: "SQL Query Clinic",
-    filename: "comp301-sql-clinic-demo.md",
+    filename: "compsci351-sql-clinic-demo.md",
     type: "tutorial",
     year: "2026",
     tags: ["sql", "joins", "group-by"],
@@ -132,38 +133,7 @@ function seedIfEmpty(db: Database.Database) {
   insertUser.run(studentId, "Alex Chen", "student@tutorly.local", bcrypt.hashSync("Student123!", 10), "student", now);
   insertUser.run(adminId, "Mia Admin", "admin@tutorly.local", bcrypt.hashSync("Admin123!", 10), "admin", now);
 
-  const courses = [
-    {
-      id: randomUUID(),
-      code: "COMP101",
-      name: "Programming Fundamentals",
-      description: "Build a strong foundation in problem solving, Python, functions, data structures, and program design.",
-      term: "Semester 1 · 2026",
-      accent: "#6d5dfc",
-      icon: "terminal-square",
-      progress: 68,
-    },
-    {
-      id: randomUUID(),
-      code: "COMP201",
-      name: "Data Structures & Algorithms",
-      description: "Understand core data structures, algorithmic thinking, complexity, trees, graphs, and searching.",
-      term: "Semester 1 · 2026",
-      accent: "#0d9f8f",
-      icon: "network",
-      progress: 43,
-    },
-    {
-      id: randomUUID(),
-      code: "COMP301",
-      name: "Database Systems",
-      description: "Model reliable data, write expressive SQL, reason about normalisation, transactions, and indexes.",
-      term: "Semester 2 · 2026",
-      accent: "#ed8b45",
-      icon: "database",
-      progress: 24,
-    },
-  ];
+  const courses = uoaUndergraduateCourses.map((course) => ({ ...course, id: randomUUID() }));
 
   const insertCourse = db.prepare(
     "INSERT INTO courses (id, code, name, description, term, accent, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -210,6 +180,62 @@ function seedIfEmpty(db: Database.Database) {
   db.prepare("INSERT INTO ai_configuration (key, value, updated_at) VALUES ('system_prompt_version', '1', ?)").run(now);
 }
 
+function migrateLegacyDemoCourses(db: Database.Database) {
+  const findByCode = db.prepare("SELECT id FROM courses WHERE code = ?");
+  const updateById = db.prepare(
+    `UPDATE courses
+     SET code = ?, name = ?, description = ?, term = ?, accent = ?, icon = ?, updated_at = ?
+     WHERE id = ?`,
+  );
+  const now = new Date().toISOString();
+
+  for (const course of uoaUndergraduateCourses) {
+    if (!course.legacyCode) continue;
+    const current = findByCode.get(course.code) as { id: string } | undefined;
+    const legacy = findByCode.get(course.legacyCode) as { id: string } | undefined;
+    if (current || !legacy) continue;
+
+    updateById.run(
+      course.code,
+      course.name,
+      course.description,
+      course.term,
+      course.accent,
+      course.icon,
+      now,
+      legacy.id,
+    );
+  }
+}
+
+function syncUoaCourseCatalog(db: Database.Database) {
+  const now = new Date().toISOString();
+  const findCourse = db.prepare("SELECT id FROM courses WHERE code = ?");
+  const insertCourse = db.prepare(
+    "INSERT INTO courses (id, code, name, description, term, accent, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  );
+  const updateCourse = db.prepare(
+    "UPDATE courses SET name = ?, description = ?, term = ?, accent = ?, icon = ?, updated_at = ? WHERE id = ?",
+  );
+  const users = db.prepare("SELECT id FROM users").all() as { id: string }[];
+  const enroll = db.prepare(
+    "INSERT OR IGNORE INTO enrollments (user_id, course_id, progress, created_at) VALUES (?, ?, 0, ?)",
+  );
+
+  for (const course of uoaUndergraduateCourses) {
+    const existing = findCourse.get(course.code) as { id: string } | undefined;
+    const courseId = existing?.id ?? randomUUID();
+
+    if (existing) {
+      updateCourse.run(course.name, course.description, course.term, course.accent, course.icon, now, courseId);
+    } else {
+      insertCourse.run(courseId, course.code, course.name, course.description, course.term, course.accent, course.icon, now, now);
+    }
+
+    for (const user of users) enroll.run(user.id, courseId, now);
+  }
+}
+
 export function getDb(): Database.Database {
   if (globalForDb.tutorDb) return globalForDb.tutorDb;
 
@@ -220,7 +246,11 @@ export function getDb(): Database.Database {
   db.pragma("journal_mode = WAL");
   migrate(db);
 
-  const seed = db.transaction(() => seedIfEmpty(db));
+  const seed = db.transaction(() => {
+    seedIfEmpty(db);
+    migrateLegacyDemoCourses(db);
+    syncUoaCourseCatalog(db);
+  });
   seed();
 
   globalForDb.tutorDb = db;

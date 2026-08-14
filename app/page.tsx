@@ -106,7 +106,7 @@ export default async function LandingPage() {
               <div className="flex items-center justify-between border-b border-[#ececf3] px-5 py-4">
                 <div className="flex items-center gap-3">
                   <span className="grid size-9 place-items-center rounded-xl bg-[#efefff] text-[#625bf6]"><Sparkles size={17} /></span>
-                  <div><p className="text-sm font-bold">AI Tutor</p><p className="text-[11px] text-[#8a92a5]">COMP201 · Trees & Traversal</p></div>
+                  <div><p className="text-sm font-bold">AI Tutor</p><p className="text-[11px] text-[#8a92a5]">COMPSCI 220 · Trees & Traversal</p></div>
                 </div>
                 <span className="rounded-full bg-[#eaf8f6] px-2.5 py-1 text-[11px] font-bold text-[#0d8f80]">资料已连接</span>
               </div>
@@ -193,8 +193,14 @@ export default async function LandingPage() {
               <h2 className="mt-5 max-w-2xl text-3xl font-bold tracking-[-0.045em]">知道答案从哪里来，也知道什么时候资料不够。</h2>
               <p className="mt-4 max-w-2xl leading-7 text-[#b5bdd0]">Tutorly 会区分课程资料和通用知识；没有依据时明确说明，不虚构页码、评分标准或课程要求。</p>
             </div>
-            <Link href={user ? "/dashboard" : "/register"} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 font-semibold text-[#242d48] hover:bg-[#f1f0ff]">
-              {user ? "继续学习" : "创建学习空间"} <ArrowRight size={17} />
+            <Link
+              href={user ? "/dashboard" : "/register"}
+              className="group inline-flex h-14 w-full min-w-[176px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#756cff] to-[#5148dc] px-6 text-base font-extrabold text-white shadow-[0_14px_35px_rgba(98,91,246,.48)] ring-2 ring-white/15 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#827aff] hover:to-[#625bf6] hover:shadow-[0_18px_42px_rgba(98,91,246,.58)] sm:w-auto"
+            >
+              {user ? "继续学习" : "创建学习空间"}
+              <span className="grid size-7 place-items-center rounded-full bg-white/20 transition-transform duration-200 group-hover:translate-x-0.5">
+                <ArrowRight size={17} strokeWidth={2.5} />
+              </span>
             </Link>
           </div>
         </div>
