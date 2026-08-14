@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { getCurrentUser, privacySafeUserIdentifier } from "@/lib/auth";
+import { toPublicAiError } from "@/lib/ai-error";
 import { buildTutorInstructions } from "@/lib/ai-prompt";
 import { getDb } from "@/lib/db";
 import { getChatModel, getOpenAIClient } from "@/lib/openai";
@@ -172,7 +173,8 @@ export async function POST(request: Request) {
         send({ type: "done", messageId: assistantId, citations: citedSources.map(toPublicSource), usage: { inputTokens, outputTokens } });
       } catch (error) {
         console.error("AI response failed", error);
-        send({ type: "error", error: "AI 暂时无法完成回答。请检查 API 配置或稍后重试。" });
+        const publicError = toPublicAiError(error);
+        send({ type: "error", error: publicError.message, code: publicError.code });
       } finally {
         controller.close();
       }

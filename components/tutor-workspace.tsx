@@ -30,7 +30,7 @@ type StreamEvent =
   | { type: "meta"; conversationId: string; title: string; sources: Citation[] }
   | { type: "delta"; text: string }
   | { type: "done"; messageId: string; citations: Citation[] }
-  | { type: "error"; error: string };
+  | { type: "error"; error: string; code?: string };
 
 const welcomeSuggestions = [
   { title: "解释一个概念", prompt: "请根据课程资料，解释这门课最核心的概念，并给一个直观例子。" },
