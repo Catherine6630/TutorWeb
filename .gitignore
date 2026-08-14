@@ -1,0 +1,32 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# tests and builds
+/coverage
+/.next
+/out
+
+# local data and uploads
+/data/*.db
+/data/*.db-*
+/storage/materials/*
+!/storage/materials/.gitkeep
+
+# environment and logs
+.env
+.env.local
+.env.*.local
+*.log
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+.pnpm-store/
