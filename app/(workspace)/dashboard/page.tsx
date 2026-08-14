@@ -31,8 +31,14 @@ export default async function DashboardPage() {
             <h2 className="mt-4 text-2xl font-bold tracking-[-0.035em] sm:text-3xl">今天想弄懂什么？</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-[#bbc2d4]">选择课程与学习模式，Tutorly 会从相关资料中找到依据，再和你一起拆解问题。</p>
           </div>
-          <Link href="/tutor" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-[#252e47] shadow-lg hover:bg-[#f1f0ff]">
-            开始对话 <ArrowRight size={17} />
+          <Link
+            href="/tutor"
+            className="group inline-flex h-14 w-full min-w-[176px] shrink-0 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#756cff] to-[#5148dc] px-6 text-base font-extrabold text-white shadow-[0_14px_35px_rgba(98,91,246,.5)] ring-2 ring-white/15 transition-all duration-200 hover:-translate-y-0.5 hover:from-[#827aff] hover:to-[#625bf6] hover:shadow-[0_18px_42px_rgba(98,91,246,.6)] md:w-auto"
+          >
+            开始对话
+            <span className="grid size-7 place-items-center rounded-full bg-white/20 transition-transform duration-200 group-hover:translate-x-0.5">
+              <ArrowRight size={17} strokeWidth={2.5} />
+            </span>
           </Link>
         </div>
       </section>

@@ -7,7 +7,7 @@ import type { AuthUser } from "@/lib/models";
 const COOKIE_NAME = "tutorly_session";
 const SESSION_DAYS = 14;
 
-function useSecureCookie(): boolean {
+function shouldUseSecureCookie(): boolean {
   if (process.env.SESSION_COOKIE_SECURE === "true") return true;
   if (process.env.SESSION_COOKIE_SECURE === "false") return false;
   return process.env.NODE_ENV === "production";
@@ -47,7 +47,7 @@ export async function createSession(userId: string) {
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: useSecureCookie(),
+    secure: shouldUseSecureCookie(),
     path: "/",
     expires: expiresAt,
   });

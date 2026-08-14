@@ -7,7 +7,7 @@ Tutorly 是一个面向 Computer Science 学生的全栈 AI 学习平台。它�
 ## 已实现
 
 - 学生注册、登录、服务端 Session 与角色权限。
-- 演示课程：COMP101、COMP201、COMP301。
+- UoA 2026 本科 COMPSCI 课程目录：Stage I–III 共 36 个课程条目。
 - 学生首页、课程中心、课程详情、资料库、收藏、设置。
 - AI Tutor：六种学习模式、课程选择、资料范围选择、流式回答、Markdown/代码展示。
 - 本地 RAG：资料文本提取、分块、可选 OpenAI Embeddings、关键词与向量混合检索。
@@ -89,7 +89,7 @@ OpenAI 参考：
 先在管理员后台创建课程，然后运行：
 
 ```bash
-pnpm import:folder -- COMP201 "D:\path\to\course-materials"
+pnpm import:folder -- "COMPSCI 220" "D:\path\to\course-materials"
 ```
 
 脚本会复制支持的文件、提取文本并建立索引。请确保你有权使用和处理这些课件、试卷或答案。
