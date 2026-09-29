@@ -16,10 +16,17 @@ describe("toPublicAiError", () => {
       toPublicAiError({
         status: 429,
         error: { code: "project_spend_limit_exceeded", type: "insufficient_quota" },
-      }),
+      }, "zh"),
     ).toEqual({
       code: "AI_QUOTA_EXHAUSTED",
       message: "AI 服务当前没有可用额度。请联系管理员检查 OpenAI Billing、项目预算和 Usage Limits。",
+    });
+  });
+
+  it("uses English by default", () => {
+    expect(toPublicAiError({ status: 401 })).toEqual({
+      code: "AI_AUTH_INVALID",
+      message: "The OpenAI API key is invalid or inactive. Ask an administrator to update it.",
     });
   });
 

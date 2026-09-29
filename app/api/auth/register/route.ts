@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSession, registerUser } from "@/lib/auth";
+import { getApiMessages } from "@/lib/api-messages";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(60),
@@ -9,9 +10,10 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  const copy = await getApiMessages();
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "请填写有效信息；密码至少 8 位并包含字母和数字。" }, { status: 400 });
+    return NextResponse.json({ error: copy.validRegistration }, { status: 400 });
   }
   try {
     const user = registerUser(parsed.data.name, parsed.data.email, parsed.data.password);
@@ -19,8 +21,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "EMAIL_EXISTS") {
-      return NextResponse.json({ error: "这个邮箱已经注册。" }, { status: 409 });
+      return NextResponse.json({ error: copy.emailExists }, { status: 409 });
     }
-    return NextResponse.json({ error: "暂时无法创建账号。" }, { status: 500 });
+    return NextResponse.json({ error: copy.createAccountFailed }, { status: 500 });
   }
 }

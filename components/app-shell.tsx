@@ -17,16 +17,10 @@ import {
   X,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import type { AuthUser } from "@/lib/models";
-
-const navigation = [
-  { href: "/dashboard", label: "学习首页", icon: LayoutDashboard },
-  { href: "/courses", label: "我的课程", icon: GraduationCap },
-  { href: "/tutor", label: "AI Tutor", icon: Sparkles },
-  { href: "/library", label: "资料库", icon: Library },
-  { href: "/bookmarks", label: "收藏", icon: BookMarked },
-];
 
 function Navigation({
   user,
@@ -37,7 +31,38 @@ function Navigation({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { language } = useLanguage();
   const [loggingOut, setLoggingOut] = useState(false);
+  const copy = language === "zh" ? {
+    workspace: "学习空间",
+    dashboard: "学习首页",
+    courses: "我的课程",
+    tutor: "AI Tutor",
+    library: "资料库",
+    bookmarks: "收藏",
+    management: "管理",
+    admin: "管理后台",
+    settings: "设置",
+    logout: "退出登录",
+  } : {
+    workspace: "Workspace",
+    dashboard: "Dashboard",
+    courses: "My courses",
+    tutor: "AI Tutor",
+    library: "Library",
+    bookmarks: "Bookmarks",
+    management: "Management",
+    admin: "Admin console",
+    settings: "Settings",
+    logout: "Log out",
+  };
+  const navigation = [
+    { href: "/dashboard", label: copy.dashboard, icon: LayoutDashboard },
+    { href: "/courses", label: copy.courses, icon: GraduationCap },
+    { href: "/tutor", label: copy.tutor, icon: Sparkles },
+    { href: "/library", label: copy.library, icon: Library },
+    { href: "/bookmarks", label: copy.bookmarks, icon: BookMarked },
+  ];
 
   const active = (href: string) => pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
 
@@ -52,7 +77,7 @@ function Navigation({
     <div className="flex h-full flex-col">
       <div className="flex h-20 items-center px-5"><Logo /></div>
       <div className="px-3">
-        <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a0a6b5]">Workspace</p>
+        <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a0a6b5]">{copy.workspace}</p>
         <nav className="space-y-1">
           {navigation.map((item) => (
             <Link
@@ -76,7 +101,7 @@ function Navigation({
 
       {user.role === "admin" && (
         <div className="mt-7 px-3">
-          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a0a6b5]">Management</p>
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a0a6b5]">{copy.management}</p>
           <Link
             href="/admin"
             onClick={onNavigate}
@@ -85,14 +110,15 @@ function Navigation({
               pathname.startsWith("/admin") ? "bg-[#eaf8f6] text-[#087f72]" : "text-[#667085] hover:bg-[#f5f6fa]",
             )}
           >
-            <ShieldCheck size={18} /> 管理后台
+            <ShieldCheck size={18} /> {copy.admin}
           </Link>
         </div>
       )}
 
       <div className="mt-auto p-3">
+        <LanguageSwitcher className="mb-2 w-full justify-center shadow-none" />
         <Link href="/settings" onClick={onNavigate} className="mb-2 flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium text-[#737c90] hover:bg-[#f5f6fa]">
-          <Settings size={17} /> 设置
+          <Settings size={17} /> {copy.settings}
         </Link>
         <div className="rounded-2xl border border-[#e7e8ef] bg-[#fafafd] p-3">
           <div className="flex items-center gap-3">
@@ -103,7 +129,7 @@ function Navigation({
               <p className="truncate text-sm font-bold text-[#2d364d]">{user.name}</p>
               <p className="truncate text-[11px] text-[#8a92a5]">{user.email}</p>
             </div>
-            <button onClick={logout} disabled={loggingOut} className="grid size-8 place-items-center rounded-lg text-[#8a92a5] hover:bg-white hover:text-[#c33d3d]" aria-label="退出登录">
+            <button onClick={logout} disabled={loggingOut} className="grid size-8 place-items-center rounded-lg text-[#8a92a5] hover:bg-white hover:text-[#c33d3d]" aria-label={copy.logout}>
               <LogOut size={15} />
             </button>
           </div>
@@ -114,7 +140,11 @@ function Navigation({
 }
 
 export function AppShell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
+  const { language } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const openNavigation = language === "zh" ? "打开导航" : "Open navigation";
+  const closeNavigation = language === "zh" ? "关闭导航" : "Close navigation";
+  const closeOverlay = language === "zh" ? "关闭导航遮罩" : "Close navigation overlay";
 
   return (
     <div className="min-h-screen bg-[#f7f8fc]">
@@ -124,16 +154,16 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
 
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#e7e8ef] bg-white/90 px-4 backdrop-blur lg:hidden">
         <Logo />
-        <button className="grid size-10 place-items-center rounded-xl border border-[#e4e5ec]" onClick={() => setMobileOpen(true)} aria-label="打开导航">
+        <button className="grid size-10 place-items-center rounded-xl border border-[#e4e5ec]" onClick={() => setMobileOpen(true)} aria-label={openNavigation}>
           <Menu size={20} />
         </button>
       </header>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <button className="absolute inset-0 bg-[#172036]/35 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-label="关闭导航遮罩" />
+          <button className="absolute inset-0 bg-[#172036]/35 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-label={closeOverlay} />
           <aside className="absolute inset-y-0 left-0 w-[286px] bg-white shadow-2xl">
-            <button className="absolute right-3 top-5 z-10 grid size-9 place-items-center rounded-lg text-[#6e778b] hover:bg-[#f0f1f5]" onClick={() => setMobileOpen(false)} aria-label="关闭导航">
+            <button className="absolute right-3 top-5 z-10 grid size-9 place-items-center rounded-lg text-[#6e778b] hover:bg-[#f0f1f5]" onClick={() => setMobileOpen(false)} aria-label={closeNavigation}>
               <X size={19} />
             </button>
             <Navigation user={user} onNavigate={() => setMobileOpen(false)} />

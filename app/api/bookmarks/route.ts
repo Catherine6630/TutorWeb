@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { getApiMessages } from "@/lib/api-messages";
 
 const schema = z.object({ messageId: z.string().min(1) });
 
 export async function POST(request: Request) {
+  const copy = await getApiMessages();
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "请先登录。" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: copy.loginRequired }, { status: 401 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "参数无效。" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: copy.invalidParameters }, { status: 400 });
   const db = getDb();
   const allowed = db
     .prepare(
@@ -17,7 +19,7 @@ export async function POST(request: Request) {
        WHERE m.id = ? AND c.user_id = ? AND m.role = 'assistant'`,
     )
     .get(parsed.data.messageId, user.id);
-  if (!allowed) return NextResponse.json({ error: "消息不存在。" }, { status: 404 });
+  if (!allowed) return NextResponse.json({ error: copy.messageMissing }, { status: 404 });
   const existing = db.prepare("SELECT 1 FROM bookmarks WHERE user_id = ? AND message_id = ?").get(user.id, parsed.data.messageId);
   if (existing) {
     db.prepare("DELETE FROM bookmarks WHERE user_id = ? AND message_id = ?").run(user.id, parsed.data.messageId);

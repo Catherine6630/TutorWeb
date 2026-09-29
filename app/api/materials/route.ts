@@ -7,10 +7,12 @@ import { getDb } from "@/lib/db";
 import { allowedExtensions, ingestMaterial } from "@/lib/ingest";
 import { getCourseForUser } from "@/lib/queries";
 import { safeFilename } from "@/lib/utils";
+import { getApiMessages } from "@/lib/api-messages";
 
 export async function POST(request: Request) {
+  const copy = await getApiMessages();
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "请先登录。" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: copy.loginRequired }, { status: 401 });
 
   const form = await request.formData();
   const file = form.get("file");
@@ -21,14 +23,14 @@ export async function POST(request: Request) {
   const tags = String(form.get("tags") || "").split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 10);
 
   if (!(file instanceof File) || !courseId || !title) {
-    return NextResponse.json({ error: "请选择文件并填写标题与课程。" }, { status: 400 });
+    return NextResponse.json({ error: copy.fileAndCourseRequired }, { status: 400 });
   }
-  if (!getCourseForUser(user, courseId)) return NextResponse.json({ error: "你没有访问这门课程的权限。" }, { status: 403 });
+  if (!getCourseForUser(user, courseId)) return NextResponse.json({ error: copy.courseForbidden }, { status: 403 });
 
   const extension = path.extname(file.name).toLowerCase();
-  if (!allowedExtensions.has(extension)) return NextResponse.json({ error: "暂不支持这种文件格式。" }, { status: 415 });
+  if (!allowedExtensions.has(extension)) return NextResponse.json({ error: copy.unsupportedFile }, { status: 415 });
   const maxBytes = Number(process.env.MAX_UPLOAD_MB || 15) * 1024 * 1024;
-  if (file.size <= 0 || file.size > maxBytes) return NextResponse.json({ error: `文件必须小于 ${process.env.MAX_UPLOAD_MB || 15} MB。` }, { status: 413 });
+  if (file.size <= 0 || file.size > maxBytes) return NextResponse.json({ error: copy.fileTooLarge(Number(process.env.MAX_UPLOAD_MB || 15)) }, { status: 413 });
 
   const uploadRoot = path.resolve(/* turbopackIgnore: true */ process.cwd(), process.env.UPLOAD_DIR || "./storage/materials");
   await mkdir(uploadRoot, { recursive: true });
@@ -49,6 +51,6 @@ export async function POST(request: Request) {
     await ingestMaterial(materialId);
     return NextResponse.json({ id: materialId, status: "ready" }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ id: materialId, status: "failed", error: error instanceof Error ? error.message : "资料解析失败。" }, { status: 422 });
+    return NextResponse.json({ id: materialId, status: "failed", error: error instanceof Error ? error.message : copy.ingestFailed }, { status: 422 });
   }
 }

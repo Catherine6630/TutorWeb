@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { getApiMessages } from "@/lib/api-messages";
 
 const schema = z.object({
   code: z.string().trim().min(2).max(20).transform((value) => value.toUpperCase()),
@@ -13,11 +14,12 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  const copy = await getApiMessages();
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "请先登录。" }, { status: 401 });
-  if (user.role !== "admin") return NextResponse.json({ error: "需要管理员权限。" }, { status: 403 });
+  if (!user) return NextResponse.json({ error: copy.loginRequired }, { status: 401 });
+  if (user.role !== "admin") return NextResponse.json({ error: copy.adminRequired }, { status: 403 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "课程信息不完整。" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: copy.incompleteCourse }, { status: 400 });
   const db = getDb();
   const now = new Date().toISOString();
   const id = randomUUID();
@@ -31,6 +33,6 @@ export async function POST(request: Request) {
     transaction();
     return NextResponse.json({ id }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "课程代码已存在。" }, { status: 409 });
+    return NextResponse.json({ error: copy.courseExists }, { status: 409 });
   }
 }

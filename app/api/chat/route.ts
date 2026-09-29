@@ -6,6 +6,7 @@ import { toPublicAiError } from "@/lib/ai-error";
 import { buildTutorInstructions } from "@/lib/ai-prompt";
 import { getDb } from "@/lib/db";
 import { getChatModel, getOpenAIClient } from "@/lib/openai";
+import { getLanguage } from "@/lib/language-server";
 import { getCourseForUser } from "@/lib/queries";
 import { buildKnowledgeContext, retrieveSources } from "@/lib/rag";
 import { truncate } from "@/lib/utils";
@@ -21,8 +22,8 @@ const schema = z.object({
 
 type HistoryRow = { role: "user" | "assistant"; content: string };
 
-function titleFromMessage(message: string): string {
-  return truncate(message.replace(/```[\s\S]*?```/g, "代码问题").replace(/\s+/g, " "), 48);
+function titleFromMessage(message: string, language: "en" | "zh"): string {
+  return truncate(message.replace(/```[\s\S]*?```/g, language === "zh" ? "代码问题" : "Code question").replace(/\s+/g, " "), 48);
 }
 
 function toPublicSource(source: RetrievedSource) {
@@ -39,18 +40,24 @@ function toPublicSource(source: RetrievedSource) {
 }
 
 export async function POST(request: Request) {
+  const language = await getLanguage();
+  const copy = language === "zh" ? {
+    login: "请先登录。", invalid: "对话参数无效。", forbidden: "你没有访问这门课程的权限。", notConfigured: "尚未配置 OPENAI_API_KEY。请在 .env.local 中添加密钥后重启开发服务。", limit: "今天的 AI 提问次数已达到上限，请明天再试。", missing: "对话不存在。",
+  } : {
+    login: "Please log in first.", invalid: "The conversation request is invalid.", forbidden: "You do not have access to this course.", notConfigured: "OPENAI_API_KEY is not configured. Add it to .env.local and restart the development server.", limit: "You have reached today's AI message limit. Please try again tomorrow.", missing: "Conversation not found.",
+  };
   const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "请先登录。" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: copy.login }, { status: 401 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "对话参数无效。" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: copy.invalid }, { status: 400 });
   const input = parsed.data;
   const course = getCourseForUser(user, input.courseId);
-  if (!course) return NextResponse.json({ error: "你没有访问这门课程的权限。" }, { status: 403 });
+  if (!course) return NextResponse.json({ error: copy.forbidden }, { status: 403 });
 
   const openai = getOpenAIClient();
   if (!openai) {
     return NextResponse.json(
-      { error: "尚未配置 OPENAI_API_KEY。请在 .env.local 中添加密钥后重启开发服务。", code: "AI_NOT_CONFIGURED" },
+      { error: copy.notConfigured, code: "AI_NOT_CONFIGURED" },
       { status: 503 },
     );
   }
@@ -66,16 +73,16 @@ export async function POST(request: Request) {
     )
     .get(user.id, today.toISOString()) as { count: number };
   if (daily.count >= Number(process.env.AI_DAILY_MESSAGE_LIMIT || 100)) {
-    return NextResponse.json({ error: "今天的 AI 提问次数已达到上限，请明天再试。" }, { status: 429 });
+    return NextResponse.json({ error: copy.limit }, { status: 429 });
   }
 
   const conversationId = input.conversationId || randomUUID();
-  let title = titleFromMessage(input.message);
+  let title = titleFromMessage(input.message, language);
   if (input.conversationId) {
     const existing = db
       .prepare("SELECT id, title FROM conversations WHERE id = ? AND user_id = ?")
       .get(input.conversationId, user.id) as { id: string; title: string } | undefined;
-    if (!existing) return NextResponse.json({ error: "对话不存在。" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: copy.missing }, { status: 404 });
     title = existing.title;
     db.prepare("UPDATE conversations SET course_id = ?, learning_mode = ?, updated_at = ? WHERE id = ?")
       .run(course.id, input.learningMode, new Date().toISOString(), conversationId);
@@ -173,7 +180,7 @@ export async function POST(request: Request) {
         send({ type: "done", messageId: assistantId, citations: citedSources.map(toPublicSource), usage: { inputTokens, outputTokens } });
       } catch (error) {
         console.error("AI response failed", error);
-        const publicError = toPublicAiError(error);
+        const publicError = toPublicAiError(error, language);
         send({ type: "error", error: publicError.message, code: publicError.code });
       } finally {
         controller.close();
